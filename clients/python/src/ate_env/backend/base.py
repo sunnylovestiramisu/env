@@ -55,3 +55,9 @@ class BackendDriver(ABC):
     @abstractmethod
     def reap(self, run_id: str) -> int:
         """Force delete all resources associated with a run_id."""
+
+    def build_runtime(
+        self, instance: RawSandboxInstance, data_plane: str = "ate_env"
+    ) -> tuple[Any, Optional[Any]]:
+        """Construct runtime guest hook and data plane coordinates for this sandbox."""
+        raise NotImplementedError
