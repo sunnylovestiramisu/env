@@ -400,18 +400,9 @@ func (s *Server) guestConn(atespace, id string) (*grpc.ClientConn, error) {
 	if atespace == "" {
 		atespace = DefaultAtespace
 	}
-	targetActor := atespace + "/" + id
 	conn, err := grpc.NewClient(
 		s.routerAddr,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
-		grpc.WithChainUnaryInterceptor(func(ctx context.Context, method string, req, reply any, cc *grpc.ClientConn, invoker grpc.UnaryInvoker, opts ...grpc.CallOption) error {
-			ctx = metadata.AppendToOutgoingContext(ctx, ate.TargetActorHeader, targetActor)
-			return invoker(ctx, method, req, reply, cc, opts...)
-		}),
-		grpc.WithChainStreamInterceptor(func(ctx context.Context, desc *grpc.StreamDesc, cc *grpc.ClientConn, method string, streamer grpc.Streamer, opts ...grpc.CallOption) (grpc.ClientStream, error) {
-			ctx = metadata.AppendToOutgoingContext(ctx, ate.TargetActorHeader, targetActor)
-			return streamer(ctx, desc, cc, method, opts...)
-		}),
 	)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "dialing guest router for %s/%s: %v", atespace, id, err)
