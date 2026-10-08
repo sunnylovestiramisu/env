@@ -68,7 +68,7 @@ class SandboxHandle:
 
     def exec(self, command: str | List[str], cwd: str = "",
              env: Optional[Dict[str, str]] = None, timeout_s: float = 120.0,
-             check: bool = True) -> str:
+             check: bool = True) -> ExecResult:
         """
         Execute command inside the sandbox.
         
@@ -76,10 +76,11 @@ class SandboxHandle:
         (CommandTimeoutError if the command hit its deadline).
         Infrastructure failures always raise InfrastructureError, regardless
         of ``check``.
-        Returns stdout (and stderr if combined).
+        Returns ExecResult.
         """
         if self._session is not None:
-            return self._session.run(command, timeout_s=timeout_s)
+            stdout = self._session.run(command, timeout_s=timeout_s)
+            return ExecResult(exit_code=0, stdout=stdout, stderr="")
 
         res = self.runtime.exec(command, cwd=cwd, env=env, timeout_s=timeout_s)
         if check and res.timed_out:
@@ -94,11 +95,11 @@ class SandboxHandle:
                 f"STDOUT: {res.stdout}\nSTDERR: {res.stderr}",
                 result=res,
             )
-        return res.stdout
+        return res
 
     async def exec_async(self, command: str | List[str], cwd: str = "",
                          env: Optional[Dict[str, str]] = None, timeout_s: float = 120.0,
-                         check: bool = True) -> str:
+                         check: bool = True) -> ExecResult:
         """Asynchronously execute command inside the sandbox."""
         res = await self.runtime.exec_async(command, cwd=cwd, env=env, timeout_s=timeout_s)
         if check and res.timed_out:
@@ -113,7 +114,7 @@ class SandboxHandle:
                 f"STDOUT: {res.stdout}\nSTDERR: {res.stderr}",
                 result=res,
             )
-        return res.stdout
+        return res
 
     async def write_file_async(self, path: str, content: bytes | str) -> None:
         """Asynchronously write file content directly into sandbox filesystem."""
@@ -148,6 +149,20 @@ class SandboxHandle:
         finally:
             self.runtime.close()
 
+    async def release_async(self) -> None:
+        """Asynchronously release this sandbox back to the backend or terminate it."""
+        self.close_session()
+        try:
+            if hasattr(self.backend, "release_async"):
+                await self.backend.release_async(self.sandbox_id, recycle=False)
+            else:
+                self.backend.release(self.sandbox_id, recycle=False)
+        finally:
+            if hasattr(self.runtime, "close_async"):
+                await self.runtime.close_async()
+            else:
+                self.runtime.close()
+
     def recycle(self) -> None:
         """Return sandbox to warm pool after cleaning working state."""
         self.close_session()
@@ -156,20 +171,28 @@ class SandboxHandle:
         finally:
             self.runtime.close()
 
+    async def recycle_async(self) -> None:
+        """Asynchronously return sandbox to warm pool after cleaning working state."""
+        self.close_session()
+        try:
+            if hasattr(self.backend, "release_async"):
+                await self.backend.release_async(self.sandbox_id, recycle=True)
+            else:
+                self.backend.release(self.sandbox_id, recycle=True)
+        finally:
+            if hasattr(self.runtime, "close_async"):
+                await self.runtime.close_async()
+            else:
+                self.runtime.close()
+
     def __enter__(self) -> "SandboxHandle":
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb) -> None:
-        if exc_type is not None:
-            self.release()
-        else:
-            self.recycle()
+        self.release()
 
     async def __aenter__(self) -> "SandboxHandle":
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb) -> None:
-        if exc_type is not None:
-            self.release()
-        else:
-            self.recycle()
+        await self.release_async()

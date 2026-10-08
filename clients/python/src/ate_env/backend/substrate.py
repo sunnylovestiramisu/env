@@ -327,3 +327,16 @@ class SubstrateBackendDriver(BackendDriver):
 
     def reap(self, run_id: str) -> int:
         return self._sync(self.reap_async(run_id))
+
+    def build_runtime(
+        self, instance: RawSandboxInstance, data_plane: str = "ate_env"
+    ) -> tuple[Any, Optional[Any]]:
+        from ..runtime.substrate_env_client import SubstrateEnvClientRuntime
+
+        ep = instance.data_planes.get(data_plane) or instance.data_planes.get("ate_env") or instance.data_planes.get("grpc")
+        return SubstrateEnvClientRuntime(
+            endpoint=ep.address if ep else instance.endpoint,
+            env_id=instance.instance_id,
+            atespace=self.atespace,
+            client=self.client,
+        ), ep

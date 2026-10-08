@@ -31,6 +31,7 @@ from .client import DEFAULT_ATESPACE, Client
 from .env import Env, Process
 
 # Layer 2: High-Level Fleet Management & Abstractions
+from .async_fleet import AsyncSandboxFleet
 from .config import FleetConfig
 from .fleet import SandboxFleet
 from .handle import SandboxHandle
@@ -81,6 +82,7 @@ from .types import (
 
 # Friendly aliases
 Fleet = SandboxFleet
+AsyncFleet = AsyncSandboxFleet
 EnvHandle = SandboxHandle
 
 __version__ = "0.1.0"
@@ -94,8 +96,10 @@ __all__ = [
     # High-level Fleet API
     "FleetConfig",
     "SandboxFleet",
+    "AsyncSandboxFleet",
     "SandboxHandle",
     "Fleet",
+    "AsyncFleet",
     "EnvHandle",
     # Low-level Errors
     "EnvError",

@@ -74,7 +74,7 @@ class SandboxFleet:
                 grpc_target=self.config.grpc_endpoint,
             )
         else:
-            raise NotImplementedError(f"Backend '{self.config.backend}' is not supported; choose 'substrate' or 'mock'")
+            raise NotImplementedError(f"Backend '{self.config.backend}' is not yet supported or requires extras")
 
     @property
     def tasks(self) -> List[Task]:
@@ -194,8 +194,8 @@ class SandboxFleet:
         self, raw_inst: RawSandboxInstance
     ) -> Tuple[RuntimeGuestHook, Optional[DataPlaneEndpoint]]:
         """Build the RuntimeGuestHook from this sandbox's own data-plane coordinates."""
-        if isinstance(self.backend, MockBackendDriver):
-            return MockRuntimeHook(), None
+        if hasattr(self.backend, "build_runtime"):
+            return self.backend.build_runtime(raw_inst, data_plane=self.config.data_plane)
 
         from .runtime.substrate_env_client import SubstrateEnvClientRuntime
 

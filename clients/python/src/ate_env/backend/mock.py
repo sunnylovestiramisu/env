@@ -77,3 +77,9 @@ class MockBackendDriver(BackendDriver):
         for iid in to_del:
             del self.instances[iid]
         return len(to_del)
+
+    def build_runtime(
+        self, instance: RawSandboxInstance, data_plane: str = "mock"
+    ) -> tuple[Any, Optional[Any]]:
+        from ..runtime.mock import MockRuntimeHook
+        return MockRuntimeHook(), None

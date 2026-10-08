@@ -6,7 +6,7 @@ from ate_env.types import Task
 
 def dummy_process_fn(task: Task, handle) -> str:
     res = handle.exec(f"echo processing {task.id}")
-    return res
+    return res.stdout
 
 
 @pytest.mark.parametrize("strategy", ["none", "naive", "sliding", "pipelined"])

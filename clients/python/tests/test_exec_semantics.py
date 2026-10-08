@@ -48,7 +48,10 @@ def test_check_raises_command_execution_error_with_result(handle):
     with pytest.raises(CommandExecutionError) as ei:
         handle.exec("failing-cmd")
     assert ei.value.result.exit_code == 2
-    assert handle.exec("failing-cmd", check=False) == ""
+    res = handle.exec("failing-cmd", check=False)
+    assert res.exit_code == 2
+    assert res.stdout == ""
+    assert res.stderr == "boom"
 
 
 def test_check_raises_command_timeout_error(handle):
